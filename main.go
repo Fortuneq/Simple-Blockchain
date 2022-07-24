@@ -51,3 +51,51 @@ func GenerateBlock(oldBlock Block, BPM int)(Block,	error){
 	
 	return newBlock,nil
 }
+
+// func for check is old block valid  ?
+
+func isBlockValid(newBlock,oldBlock Block) bool {
+	if oldBlock.Index +1 != newBlock.Index{
+		return false
+	}
+	if oldBlock.Hash != newBlock.PreHash{
+		return false
+	}
+	if calculateHash(newBlock) != newBlock.Hash{
+		return false
+	}
+	return true
+}
+
+func replaceChain(newBlocks []Block) {
+    if len(newBlocks) > len(Blockchain) {
+        Blockchain = newBlocks
+    }
+}
+//простейшая фунция сервера
+func run() error {
+    mux := makeMuxRouter()
+    httpAddr := os.Getenv("ADDR")
+    log.Println("Listening on ", os.Getenv("ADDR"))
+    s := &http.Server{
+        Addr:           ":" + httpAddr,
+        Handler:        mux,
+        ReadTimeout:    10 * time.Second,
+        WriteTimeout:   10 * time.Second,
+        MaxHeaderBytes: 1 << 20,
+    }
+
+    if err := s.ListenAndServe(); err != nil {
+        return err
+    }
+
+    return nil
+}
+
+// фунция для обработки блоков в бразуере 
+func makeMuxRouter() http.Handler {
+    muxRouter := mux.NewRouter()
+    muxRouter.HandleFunc("/", handleGetBlockchain).Methods("GET")
+    muxRouter.HandleFunc("/", handleWriteBlock).Methods("POST")
+    return muxRouter
+}
